@@ -3,17 +3,29 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // This rule allows anyone with your Firestore database reference to view, edit,
-    // and delete all data in your Firestore database. It is useful for getting
-    // started, but it is configured to expire after 30 days because it
-    // leaves your app open to attackers. At that time, all client
-    // requests to your Firestore database will be denied.
-    //
-    // Make sure to write security rules for your app before that time, or else
-    // all client requests to your Firestore database will be denied until you Update
-    // your rules
-    match /{document=**} {
-      allow read, write: if request.time < timestamp.date(2025, 4, 29);
+    // Rules for the 'users' collection
+    match /users/{userId} {
+      // Allow anyone to create their OWN user profile document upon signup
+      // The document ID MUST match the user's authenticated UID
+      allow create: if request.auth != null && request.auth.uid == userId;
+
+      // Allow a user to read THEIR OWN profile document
+      allow read: if request.auth != null && request.auth.uid == userId;
+
+      // Allow a user to update THEIR OWN profile document
+      // We might make this more granular later (e.g., cannot change email/uid)
+      allow update: if request.auth != null && request.auth.uid == userId;
+
+      // Disallow deleting user profiles for now (can be changed later)
+      allow delete: if false;
+
+      // ---- ADD THIS LATER for SWIPING ----
+      // Allow any authenticated user to READ profiles for swiping purposes?
+      // Consider privacy implications - maybe only read specific fields?
+      // For now, let's keep reads restricted to the owner. We will adjust when building swiping.
+      // allow read: if request.auth != null; // <-- POTENTIAL LATER RULE (Use with caution!)
     }
+
+    // Add rules for other collections (matches, chats, items) later
   }
 }
